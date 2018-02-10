@@ -1,9 +1,3 @@
-# i3-gaps-builder
-Docker file for building i3-gaps from airblader for debian based systems like ubuntu
+Fork of https://github.com/aarobc/i3-gaps-builder for own personal use.
 
-build with:
-`docker run --rm -v ~/i3/i3:/opt/i3-gaps-next -v ~/i3/deb:/opt/deb aarobc/build_i3_env`
-
-Then install: `sudo dpkg -i ~/i3/deb/*.deb`
-
-(NOTE: you may need to run `sudo ldconfig` after installing to register the new libraries)
+Your mileage may vary.
