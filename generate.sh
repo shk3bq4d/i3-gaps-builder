@@ -1,8 +1,7 @@
 #!/bin/bash -xe
-branch=gaps-next
-branch=4.14.1
-dir=/opt/i3-$branch
-git clone -b $branch https://github.com/Airblader/i3.git $dir
+ref=$1
+dir=/opt/i3-$ref
+git clone -b $ref https://github.com/Airblader/i3.git $dir
 # for subsequent runs
 cd $dir && git pull
 cd $dir &&

@@ -44,7 +44,7 @@ ADD generate.sh /opt/
 
 RUN mkdir /opt/i3-gaps
 WORKDIR /opt
-CMD [ "sh", "generate.sh", "$ref" ]
+CMD [ \"sh\", \"generate.sh\", \"$ref\" ]
 " | \
 docker build -f - -t $NAME .
 docker run --rm -v $BUILD_DIR/i3:/opt/i3-gaps -v $BUILD_DIR/deb:/opt/deb $NAME
