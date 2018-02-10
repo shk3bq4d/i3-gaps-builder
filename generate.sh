@@ -1,8 +1,11 @@
 #!/bin/bash -xe
-git clone -b gaps-next https://github.com/Airblader/i3.git /opt/i3-gaps-next
+branch=gaps-next
+branch=4.14.1
+dir=/opt/i3-$branch
+git clone -b $branch https://github.com/Airblader/i3.git $dir
 # for subsequent runs
-cd /opt/i3-gaps-next && git pull
-cd /opt/i3-gaps-next &&
+cd $dir && git pull
+cd $dir &&
   autoreconf --force --install \
   && rm -rf build/ \
   && mkdir -p build && cd build/ \
