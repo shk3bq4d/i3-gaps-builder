@@ -46,8 +46,9 @@ RUN mkdir /opt/i3-gaps
 WORKDIR /opt
 CMD [ \"sh\", \"generate.sh\", \"$ref\" ]
 " | \
-docker build -f - -t $NAME .
-docker run --rm -v $BUILD_DIR/i3:/opt/i3-gaps -v $BUILD_DIR/deb:/opt/deb $NAME
+docker build --network=host -f - -t $NAME .
+# --net=HOST
+docker run --network=host --rm -v $BUILD_DIR/i3:/opt/i3-gaps -v $BUILD_DIR/deb:/opt/deb $NAME
 sudo apt remove i3-wm
 sudo dpkg -i $BUILD_DIR/deb/*.deb
 sudo ldconfig
