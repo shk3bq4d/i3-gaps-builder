@@ -20,6 +20,10 @@ set -euxo pipefail
 # for i in sed which grep; do ! command -v $i &>/dev/null && echo FATAL: unexisting dependency $i && exit 1; done
 
 BUILD_DIR=~/i3
+if ! mkdir $BUILD_DIR; then
+	echo "FATAL can't mkdir $BUILD_DIR, please remove it yourself before continuing"
+	exit 1
+fi
 DIR="$( cd -P "$( dirname "$(readlink -f "${BASH_SOURCE[0]}")" )" && pwd )"
 NAME=$(basename $DIR)
 
@@ -52,6 +56,7 @@ docker run --network=host --rm -v $BUILD_DIR/i3:/opt/i3-gaps -v $BUILD_DIR/deb:/
 sudo apt remove i3-wm
 sudo dpkg -i $BUILD_DIR/deb/*.deb
 sudo ldconfig
+sudo rm -rf $BUILD_DIR
 echo "please reboot"
 
 exit 0
