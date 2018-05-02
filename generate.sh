@@ -1,4 +1,5 @@
-#!/bin/bash -xe
+#!/bin/bash
+set -xe
 ref=$1
 dir=/opt/i3-$ref
 git clone -b $ref https://github.com/Airblader/i3.git $dir
