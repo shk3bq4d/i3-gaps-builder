@@ -63,7 +63,7 @@ RUN ./autogen.sh
 RUN make
 RUN make install
 
-ADD generate.sh /opt/
+ADD add/generate.sh /opt/
 
 RUN mkdir /opt/i3-gaps
 WORKDIR /opt
