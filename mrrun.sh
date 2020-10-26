@@ -18,6 +18,7 @@ set -euxo pipefail
 # [[ $# -lt 1 || $# -gt 2 ]] && echo FATAL: incorrect number of args && usage && exit 1
 
 # for i in sed which grep; do ! command -v $i &>/dev/null && echo FATAL: unexisting dependency $i && exit 1; done
+BEFORE="$(i3 -version)"
 
 BUILD_DIR=~/i3
 rmdir $BUILD_DIR &>/dev/null || true # silently try to removes empty directory
@@ -76,6 +77,15 @@ sudo apt remove i3-wm
 sudo dpkg -i $BUILD_DIR/deb/*.deb
 sudo ldconfig
 sudo rm -rf $BUILD_DIR
-echo "please reboot"
+echo "
+----- BEFORE
+$BEFORE
+
+----- AFTER
+$(i3 -version)
+
+-----
+please reboot
+"
 
 exit 0
