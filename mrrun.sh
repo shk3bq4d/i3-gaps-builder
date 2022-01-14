@@ -1,64 +1,69 @@
 #!/usr/bin/env bash
 # ex: set filetype=sh :
-##
-##Usage:  __SCRIPT__ REMOTEHOST [REMOTEPORT]
-##configures whatever action with whatever config
-##    REMOTEHOST: remote host where to ssh
-##    REMOTEPORT: JMX port (default: 12345)
-##
-## Author: Jeff Malone, 09 Feb 2018
-##
 
 set -euxo pipefail
+umask 027
+export PATH=/usr/local/bin:/usr/local/sbin:/sbin:/bin:/usr/sbin:/usr/bin:~/bin
 
-# function usage() { sed -r -n -e s/__SCRIPT__/$(basename $0)/ -e '/^##/s/^..// p'   $0 ; }
+BEFORE="$(i3 -version || echo "i3 not installed")"
 
-# [[ $# -eq 1 && ( $1 == -h || $1 == --help ) ]] && usage && exit 0
-
-# [[ $# -lt 1 || $# -gt 2 ]] && echo FATAL: incorrect number of args && usage && exit 1
-
-# for i in sed which grep; do ! command -v $i &>/dev/null && echo FATAL: unexisting dependency $i && exit 1; done
-BEFORE="$(i3 -version)"
-
-BUILD_DIR=~/i3
+BUILD_DIR=$(mktemp -d);
+function cleanup() { [[ -n "${_tempdir:-}" && -d "$_tempdir" ]] && rm -rf $_tempdir || true; };
+#trap 'cleanup' SIGHUP SIGINT SIGQUIT SIGTERM EXIT
 rmdir $BUILD_DIR &>/dev/null || true # silently try to removes empty directory
 if ! mkdir $BUILD_DIR; then
     echo "FATAL can't mkdir $BUILD_DIR, please remove it yourself before continuing"
     exit 1
 fi
 DIR="$( cd -P "$( dirname "$(readlink -f "${BASH_SOURCE[0]}")" )" && pwd )"
-NAME=$(basename $DIR)
+OS=ubuntu:$(lsb_release -r | awk '{print $2}')
+NAME=shk3bq4d/$(basename $DIR)-$OS
 
 cd $DIR
-ref=gaps
+ref=gaps # gaps no longer builds the same, see https://github.com/i3/i3/issues/4086 and 358471a5f207886ef370d14d161a48618cf4f1f5
+ref=gaps-next
+ref=gaps # well I am switching to meson
+echo docker pull $NAME;
+docker pull $NAME || true
+
+echo rebuilding/refreshing
 echo "
-FROM ubuntu:$(lsb_release -r | awk '{print $2}')
+FROM $OS"'
+ENV DEBIAN_FRONTEND=noninteractive
 RUN true \
-    && apt-get update \
-    && apt-get install -y \
+    &&  apt-get update \
+    &&  apt-get install -y \
+        apt \
         apt-utils \
         checkinstall \
         dh-autoreconf \
+        doxygen \
         git \
-        libpango1.0-dev \
-        libxcb-keysyms1-dev \
-        libxcb-shape0-dev \
-        libxcb-util0-dev \
-        libxcb1-dev \
         libev-dev \
+        libpango1.0-dev \
         libstartup-notification0-dev \
+        libxcb1-dev \
         libxcb-cursor-dev \
         libxcb-icccm4-dev \
+        libxcb-keysyms1-dev \
         libxcb-randr0-dev \
+        libxcb-shape0 \
+        libxcb-shape0-dev \
+        libxcb-util0-dev \
         libxcb-xinerama0-dev \
         libxcb-xkb-dev \
+        libxcb-xrm0 \
+        libxcb-xrm-dev \
         libxkbcommon-dev \
         libxkbcommon-x11-dev \
         libyajl-dev \
+        meson \
+        xcb \
         xutils-dev \
     && true
 
-RUN git clone --recursive https://github.com/Airblader/xcb-util-xrm.git /tmp/xcb-util-xrm
+#RUN git clone --recursive https://github.com/Airblader/xcb-util-xrm.git /tmp/xcb-util-xrm
+RUN git clone --recursive https://github.com/shk3bq4d/xcb-util-xrm.git /tmp/xcb-util-xrm
 WORKDIR /tmp/xcb-util-xrm
 RUN ./autogen.sh
 RUN make
@@ -68,15 +73,31 @@ ADD add/generate.sh /opt/
 
 RUN mkdir /opt/i3-gaps
 WORKDIR /opt
-CMD [ \"sh\", \"generate.sh\", \"$ref\" ]
-" | \
-docker build --network=host -f - -t $NAME .
+ENTRYPOINT [ "sh", "generate.sh"]
+' | docker build --network=host -f - -t $NAME .
+docker login
+docker push $NAME
+
 # --net=HOST
-docker run --network=host --rm -v $BUILD_DIR/i3:/opt/i3-gaps -v $BUILD_DIR/deb:/opt/deb $NAME
-sudo apt remove i3-wm
-sudo dpkg -i $BUILD_DIR/deb/*.deb
+docker run --network=host --rm -v $BUILD_DIR/i3:/opt/i3-gaps -v $BUILD_DIR/mytarget:/mytarget $NAME $ref
+sudo apt remove i3-wm i3-gaps\* i3blocks || true
+
+realhosttarget=/usr/local
+savefile=$realhosttarget/i3-gaps-builder-files.$(date +'%Y.%m.%d-%H.%M.%S').txt
+umask 022
+
+cd $BUILD_DIR/mytarget
+{
+    echo "========== A"
+    find -type f | sed -r -e "s,^(\\./)?,$realhosttarget/,"
+    echo "========== B"
+    find -type f -ls
+    echo "========== C"
+    find -type f -print0 | xargs -r0 sha256sum
+    echo "========== D"
+} | sudo tee $savefile
+sudo rsync -avr $BUILD_DIR/mytarget/. $realhosttarget/.
 sudo ldconfig
-sudo rm -rf $BUILD_DIR
 echo "
 ----- BEFORE
 $BEFORE
@@ -87,5 +108,7 @@ $(i3 -version)
 -----
 please reboot
 "
+sudo chown -R $USER $BUILD_DIR
+cleanup
 
 exit 0
