@@ -24,59 +24,10 @@ ref=gaps # gaps no longer builds the same, see https://github.com/i3/i3/issues/4
 ref=gaps-next
 ref=gaps # well I am switching to meson
 echo docker pull $NAME;
-docker pull $NAME || true
-
-echo rebuilding/refreshing
-echo "
-FROM $OS"'
-ENV DEBIAN_FRONTEND=noninteractive
-RUN true \
-    &&  apt-get update \
-    &&  apt-get install -y \
-        apt \
-        apt-utils \
-        checkinstall \
-        dh-autoreconf \
-        doxygen \
-        git \
-        libev-dev \
-        libpango1.0-dev \
-        libstartup-notification0-dev \
-        libxcb1-dev \
-        libxcb-cursor-dev \
-        libxcb-icccm4-dev \
-        libxcb-keysyms1-dev \
-        libxcb-randr0-dev \
-        libxcb-shape0 \
-        libxcb-shape0-dev \
-        libxcb-util0-dev \
-        libxcb-xinerama0-dev \
-        libxcb-xkb-dev \
-        libxcb-xrm0 \
-        libxcb-xrm-dev \
-        libxkbcommon-dev \
-        libxkbcommon-x11-dev \
-        libyajl-dev \
-        meson \
-        xcb \
-        xutils-dev \
-    && true
-
-#RUN git clone --recursive https://github.com/Airblader/xcb-util-xrm.git /tmp/xcb-util-xrm
-RUN git clone --recursive https://github.com/shk3bq4d/xcb-util-xrm.git /tmp/xcb-util-xrm
-WORKDIR /tmp/xcb-util-xrm
-RUN ./autogen.sh
-RUN make
-RUN make install
-
-ADD add/generate.sh /opt/
-
-RUN mkdir /opt/i3-gaps
-WORKDIR /opt
-ENTRYPOINT [ "sh", "generate.sh"]
-' | docker build --network=host -f - -t $NAME .
-docker login
-docker push $NAME
+if ! docker pull $NAME; then
+    echo "Can't pull, let's start building"
+    ./mrbuild-runner.sh
+fi
 
 # --net=HOST
 docker run --network=host --rm -v $BUILD_DIR/i3:/opt/i3-gaps -v $BUILD_DIR/mytarget:/mytarget $NAME $ref
